@@ -1,0 +1,190 @@
+
+<html>
+<head>
+    <title>My WebSocket</title>
+</head>
+<body>
+<div style="height:100px;background-color:rgba(242, 242, 242, 1);">
+    <h1 style="line-height: 100px"> Smart Assistant for TED Talkers
+        <span id="mytime" style="line-height: 100px; float: right"></span>
+    </h1>
+</div>
+
+<div style="height: 30px;background-color: rgba(153, 255, 255, 1);text-align:center" >
+    <span id="message"></span>
+</div>
+
+
+<div style="margin-top:50px">
+    <div style="float: left">
+        startTime: <input class="Wdate" type="text" id="start" onClick="WdatePicker({el:this,dateFmt:'HH:mm'})">
+        endTime: <input class="Wdate" type="text" id="end" onClick="WdatePicker({el:this,dateFmt:'HH:mm'})">
+        duration:<span><input  id="duration" type="text" style="width:30px"/>min</span>
+        <button onclick="val()">Apply</button>
+        <br>
+
+
+            <form action="path.html" method="post" enctype="multipart/form-data" style="margin-top: 30px">
+                <input type="file" name="file" multiple="multiple"/>
+                <button type="submit">Upload</button>
+            </form>
+
+
+    </div>
+
+    <div style="float: right">
+        <form id="myform">
+            Message: <label><input name="Fruit" type="radio" value="Info" />Info</label>
+            <label><input name="Fruit" type="radio" value="Warning" />Warning</label>
+            <label><input name="Fruit" type="radio" value="Alarm" />Alarm</label>
+            <br>
+            <textarea  name="Fruit2" type="text"  style="margin: 0px; width: 507px; height: 73px;"></textarea>
+            <br>
+            <button type="button" style="float: right" onclick="pushmessage()" >Send</button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<div style="background-color:rgba(204, 204, 204, 1);margin-top:180px; width:850px; height: 200px; margin-left: 400px">
+    <div style="width:100%;height:20px">
+        <div style="width:30%;float:left;margin-left:3%">Last page::</div>
+        <div style="width:30%;float:left;margin-left:3%">PPT Notes:</div>
+        <div style="width:30%;float:left;margin-left:3%">Next page:</div>
+    </div>
+    <div style="width:30%;height:65%;padding-top:1%;margin-left:3%;float:left">
+        <textarea name="Fruit" type="text" value="" style="margin: 0px; width: 80%; height: 100%;"></textarea>
+    </div>
+    <div style="width:30%;height:65%;padding-top:1%;margin-left:3%;float:left">
+        <textarea  name="Fruit" type="text" value="" style="margin: 0px; width: 80%; height: 100%;" ></textarea>
+    </div>
+    <div style="width:30%;height:65%;padding-top:1%;margin-left:3%;float:left">
+        <textarea  name="Fruit" type="text" value="" style="margin: 0px; width: 80%; height: 100%;" ></textarea>
+    </div>
+
+    <div style="width: 100%; height:10%;text-align:center;margin-top:18%">
+        <button><</button>
+        <span>Pages</span>
+        <span><input type="text" style="width:30px"/>/<span id="total">20</span></span>
+        <button>></button>
+    </div>
+</div>
+
+</body>
+</html>
+
+<script type="text/javascript" src="My97DatePicker/WdatePicker.js"></script>
+<script src="./js/jquery-3.2.1.min.js"></script>
+<script src="./js/format.js"></script>
+<script type="text/javascript">
+
+
+    var websocket = null;
+
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        websocket = new WebSocket("ws://127.0.0.1:8080/webSocket/websocket");
+    } else {
+        alert('您的浏览器不支持')
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = function() {
+        setMessageInnerHTML("服务端未知错误,请点击重试");
+    };
+
+    //连接成功建立的回调方法
+    websocket.onopen = function(event) {
+        setMessageInnerHTML("Automatic connection");
+        /*websocket.send("web/this for web connect")*/
+    }
+
+    //接收到消息的回调方法
+    websocket.onmessage = function() {
+        //		setMessageInnerHTML(event.data);
+        //      setMessageAttribute(event.data);
+        //setScanResult(event.data);
+    }
+
+    //连接关闭的回调方法
+    websocket.onclose = function() {
+        setMessageInnerHTML("Disconnected connection");
+    }
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function() {
+        websocket.close();
+    }
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML) {
+        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+    }
+    //将原显示的消息替换
+    function setMessageAttribute(attribute) {
+        document.getElementById('message').attribute += innerHTML + '<br/>';
+    }
+    //关闭连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+
+
+    function val(){
+        var start = document.getElementById("start").value;
+        var end = document.getElementById("end").value;
+
+        var time1 = new Date().Format("yyyy-MM-dd");
+        var  startTime = time1+" "+start;
+        var endTime = time1+" "+end;
+
+        startTime = new Date(Date.parse(startTime.replace(/-/g, "/")));
+        endTime = new Date(Date.parse(endTime.replace(/-/g, "/")));
+        var duration =null;
+        if (startTime < endTime){
+             duration = (endTime-startTime)/1000/60;
+            document.getElementById("duration").value=duration;
+        }else {
+            alert("!startTime > endTime");
+        }
+
+        websocket.send("web:all+" + startTime +"-"+ endTime);
+
+    }
+
+    function pushmessage() {
+        var radios = document.getElementById("myform").Fruit;
+        console.info(radios);
+//通过名字获取  getElementsByName
+        for(var i=0;i<radios.length;i++){//循环值得集合
+            if(radios[i].checked){//通过checked属性判断是否被选中
+                userid = radios[i].value//将被选择的radio的值赋给变量userid
+            }
+        }
+
+        var text = document.getElementById("myform").Fruit2.value;
+        websocket.send("web:all+" + userid +"-"+ text);
+        alert(text)
+        alert(userid)//弹出被选中的radio的值
+    }
+
+    //获取实时时间
+    function showTime(){
+        nowtime=new Date();
+        year=nowtime.getFullYear();
+        month=nowtime.getMonth()+1;
+        date=nowtime.getDate();
+        document.getElementById("mytime").innerText=nowtime.toLocaleTimeString();
+    }
+
+    setInterval("showTime()",1000);
+
+
+
+
+</script>
